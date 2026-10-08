@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import WebSocket from 'ws';
@@ -48,26 +48,22 @@ function client(port, role, secret = SECRET) {
   });
 }
 
-test('validateCommand', () => {
-  assert.equal(validateCommand('show_model', { name: 'duck' }), null);
-  assert.equal(validateCommand('show_splat', { url: 'https://x.test/a.sog' }), null);
-  assert.match(validateCommand('show_model', { name: 'duck', url: 'https://x.test/a' }), /exactly one/);
-  assert.match(validateCommand('show_model', { url: 'javascript:alert(1)' }), /http or https/);
-  assert.match(validateCommand('show_model', { name: '../etc' }), /lowercase/);
-  assert.equal(validateCommand('set_mode', { mode: '2d' }), null);
-  assert.match(validateCommand('set_mode', { mode: 'vr' }), /2d/);
-  assert.equal(validateCommand('set_depth', { value: -0.5 }), null);
-  assert.match(validateCommand('set_depth', { value: 3 }), /-1 to 1/);
+// Shared with gadget/tests so the JS and Python validators cannot drift.
+const CASES = JSON.parse(
+  readFileSync(new URL('../../test-fixtures/protocol-cases.json', import.meta.url), 'utf8'),
+);
+
+test('validateCommand matches the shared cases', () => {
+  for (const c of CASES.validate) {
+    const got = validateCommand(c.cmd, c.args);
+    if (c.error === null) assert.equal(got, null, `${c.cmd} ${JSON.stringify(c.args)}`);
+    else assert.ok(got && got.includes(c.error), `${c.cmd} ${JSON.stringify(c.args)} -> ${got}`);
+  }
   assert.equal(validateCommand('clear'), null);
-  assert.match(validateCommand('rm_rf', {}), /unknown/);
-  assert.match(validateCommand('toString', {}), /unknown/);
 });
 
-test('parseLine', () => {
-  assert.deepEqual(parseLine('show_model duck'), { cmd: 'show_model', args: { name: 'duck' } });
-  assert.deepEqual(parseLine('show_splat https://x.test/a.sog'), { cmd: 'show_splat', args: { url: 'https://x.test/a.sog' } });
-  assert.deepEqual(parseLine('set_mode 2D'), { cmd: 'set_mode', args: { mode: '2d' } });
-  assert.deepEqual(parseLine('set_depth 0.25'), { cmd: 'set_depth', args: { value: 0.25 } });
+test('parseLine matches the shared cases', () => {
+  for (const c of CASES.parse) assert.deepEqual(parseLine(c.line), { cmd: c.cmd, args: c.args }, c.line);
 });
 
 test('isLanAddress / secretMatches', () => {

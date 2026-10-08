@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "displayxr-muse-gadget"
+version = "0.1.0"
+description = "Voice command sources (Muse, mock, stubs) for the displayxr-muse-voice bridge"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+# Same floor as the Muse Linux SDK, which installs alongside this in /opt/musegadget/venv.
+dependencies = ["websockets>=13"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+dxr-gadget = "displayxr_gadget.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["displayxr_gadget*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,38 @@
+{
+  "_comment": "Shared by bridge/test (display/protocol.js) and gadget/tests (protocol.py) so the two validators cannot drift. error: null means valid; otherwise a substring of the message.",
+  "validate": [
+    { "cmd": "show_model", "args": { "name": "car" }, "error": null },
+    { "cmd": "show_model", "args": { "name": "toy-car_2" }, "error": null },
+    { "cmd": "show_splat", "args": { "url": "https://example.com/a.sog" }, "error": null },
+    { "cmd": "show_splat", "args": { "url": "http://192.168.1.5:8791/assets/splats/knot.ply" }, "error": null },
+    { "cmd": "show_model", "args": {}, "error": "exactly one" },
+    { "cmd": "show_model", "args": { "name": "car", "url": "https://example.com/a.glb" }, "error": "exactly one" },
+    { "cmd": "show_model", "args": { "name": "../etc/passwd" }, "error": "lowercase" },
+    { "cmd": "show_model", "args": { "name": "Car" }, "error": "lowercase" },
+    { "cmd": "show_model", "args": { "url": "javascript:alert(1)" }, "error": "http or https" },
+    { "cmd": "show_model", "args": { "url": "file:///etc/passwd" }, "error": "http or https" },
+    { "cmd": "set_mode", "args": { "mode": "2d" }, "error": null },
+    { "cmd": "set_mode", "args": { "mode": "3d" }, "error": null },
+    { "cmd": "set_mode", "args": { "mode": "vr" }, "error": "2d" },
+    { "cmd": "set_mode", "args": {}, "error": "2d" },
+    { "cmd": "set_depth", "args": { "value": 0 }, "error": null },
+    { "cmd": "set_depth", "args": { "value": -1 }, "error": null },
+    { "cmd": "set_depth", "args": { "value": 0.35 }, "error": null },
+    { "cmd": "set_depth", "args": { "value": 1.5 }, "error": "-1 to 1" },
+    { "cmd": "set_depth", "args": { "value": "0.5" }, "error": "-1 to 1" },
+    { "cmd": "set_depth", "args": { "value": true }, "error": "-1 to 1" },
+    { "cmd": "start_call", "args": {}, "error": null },
+    { "cmd": "clear", "args": {}, "error": null },
+    { "cmd": "rm_rf", "args": {}, "error": "unknown command" },
+    { "cmd": "toString", "args": {}, "error": "unknown command" },
+    { "cmd": "clear", "args": [], "error": "args must be an object" }
+  ],
+  "parse": [
+    { "line": "show_model car", "cmd": "show_model", "args": { "name": "car" } },
+    { "line": "show_splat https://example.com/a.sog", "cmd": "show_splat", "args": { "url": "https://example.com/a.sog" } },
+    { "line": "show_model url=https://example.com/a.glb", "cmd": "show_model", "args": { "url": "https://example.com/a.glb" } },
+    { "line": "set_mode 2D", "cmd": "set_mode", "args": { "mode": "2d" } },
+    { "line": "set_depth 0.25", "cmd": "set_depth", "args": { "value": 0.25 } },
+    { "line": "  clear  ", "cmd": "clear", "args": {} }
+  ]
+}
