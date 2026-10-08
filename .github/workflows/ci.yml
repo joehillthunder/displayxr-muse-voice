@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # Keep in step with MUSE_SDK_COMMIT in setup-pi.sh.
+  MUSE_SDK_COMMIT: 86cf33fb4092ba700b4dc33928966d1bcb31556d
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bridge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: bridge/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  gadget:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.9 is the Muse Linux SDK's floor (Raspberry Pi OS Bullseye).
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Bridge dependencies (for the end-to-end test)
+        run: npm ci
+        working-directory: bridge
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install the gadget and the pinned Muse Linux SDK
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "gadget[test]"
+          python -m pip install "musegadget @ git+https://github.com/facebookincubator/muse-gadget-sdk@${MUSE_SDK_COMMIT}#subdirectory=linux"
+      - name: pytest (includes the real-SDK test)
+        run: python -m pytest -q -rs
+        working-directory: gadget
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck
+        run: shellcheck setup-pi.sh
+      - name: Pins agree
+        run: |
+          grep -q "MUSE_SDK_COMMIT=\"${MUSE_SDK_COMMIT}\"" setup-pi.sh || { echo "setup-pi.sh and ci.yml pin different Muse SDK commits"; exit 1; }

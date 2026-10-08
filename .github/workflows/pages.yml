@@ -1,0 +1,47 @@
+name: Deploy display to GitHub Pages
+
+# The public page is the no-hardware demo: keyboard mock mode, 2D in any browser, 3D in the
+# DisplayXR Browser. Voice commands need the bridge, which serves the same page on the LAN.
+
+on:
+  push:
+    branches: [main]
+    paths: [display/**, assets/**, .github/workflows/pages.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble the site
+        run: |
+          mkdir -p _site/assets
+          cp -r display/. _site/
+          cp -r assets/models assets/splats assets/catalog.json assets/LICENSES.md _site/assets/
+          cp LICENSE _site/LICENSE.txt
+          touch _site/.nojekyll
+          ls -R _site | head -40
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
