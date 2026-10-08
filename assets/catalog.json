@@ -1,0 +1,11 @@
+{
+  "models": {
+    "suzanne": { "file": "models/suzanne.glb", "title": "Iridescent Suzanne", "aliases": ["monkey", "monkey head"] },
+    "vase": { "file": "models/vase.glb", "title": "Glass vase with flowers", "aliases": ["flowers", "glass vase"] },
+    "car": { "file": "models/car.glb", "title": "Toy car", "aliases": ["toy car"] },
+    "cube": { "file": "models/cube.glb", "title": "Morphing cube", "aliases": ["box"] }
+  },
+  "splats": {
+    "knot": { "file": "splats/knot.ply", "title": "Rainbow torus knot", "aliases": ["torus knot", "rainbow"] }
+  }
+}
