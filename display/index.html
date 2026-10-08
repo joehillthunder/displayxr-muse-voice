@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Muse Voice 3D</title>
+<meta name="description" content="Talk to Muse, and 3D content appears on a glasses-free 3D display through DisplayXR. Runs in 2D in any browser.">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0d0e12;
+    --panel: #16181f;
+    --line: #ffffff1f;
+    --text: #e9e9ee;
+    --dim: #9a9cab;
+    --accent: #7c9cff;
+    --ok: #7ee2a4;
+    --warn: #e6c07a;
+    --bad: #fca5a5;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+               font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  header h1 { font-size: 20px; margin: 0; letter-spacing: -.2px; }
+  header .sub { color: var(--dim); font-size: 14px; }
+
+  /* The stage holds exactly one woven canvas at a time. Its black backdrop sits BEHIND the
+     canvas (woven-canvas rule 9); no effects on it or any ancestor (rule 7). */
+  .stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+  /* Rule 4: will-change from the canvas's first paint, final CSS box, bare (no border/radius). */
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+                  will-change: transform; cursor: grab; }
+  .stage canvas:active { cursor: grabbing; }
+
+  /* Idle / error splash: plain 2D, shown when no canvas is mounted. */
+  .splash { position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+            padding: 24px; color: var(--dim); }
+  .splash strong { display: block; color: var(--text); font-size: clamp(18px, 3vw, 28px);
+                   font-weight: 600; margin-bottom: 6px; }
+
+  /* Rule 5: an opaque cover ON TOP of a fresh canvas until handle.firstWoven; hard cut, no fade. */
+  .cover { position: absolute; inset: 0; background: var(--bg); display: grid; place-items: center;
+           color: var(--dim); }
+  .cover[hidden], .splash[hidden] { display: none; }
+
+  /* Small on-tile status badge: a partial region, near-solid, no backdrop-filter, no outer
+     shadow (rules 8 and 10). Marked data-inline3d-overlay and also handed to handle.exclude(). */
+  .badge { position: absolute; left: 12px; top: 12px; max-width: calc(100% - 24px);
+           padding: 5px 10px; border-radius: 8px; background: rgba(10, 11, 15, .92);
+           border: 1px solid var(--line); font-size: 13px; pointer-events: none;
+           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .badge .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+                margin-right: 6px; background: var(--dim); vertical-align: 1px; }
+  .badge.live .dot { background: var(--ok); }
+  .badge.wait .dot { background: var(--warn); }
+  .badge.err .dot { background: var(--bad); }
+
+  .call { position: absolute; inset: 0; }
+  .call[hidden] { display: none; }
+
+  .bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 12px;
+         font-size: 14px; color: var(--dim); }
+  .bar .pill { padding: 2px 9px; border: 1px solid var(--line); border-radius: 999px; }
+  .bar .pill b { color: var(--text); font-weight: 600; }
+  form.cmd { display: flex; gap: 8px; margin-top: 12px; }
+  form.cmd input { flex: 1; min-width: 0; font: 14px ui-monospace, SFMono-Regular, Menlo, monospace;
+                   padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
+                   background: var(--panel); color: var(--text); }
+  button { font: inherit; font-size: 14px; padding: 7px 12px; border-radius: 8px;
+           border: 1px solid var(--line); background: #ffffff10; color: var(--text); cursor: pointer; }
+  button:hover { background: #ffffff1c; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  details { margin-top: 12px; background: var(--panel); border: 1px solid var(--line);
+            border-radius: 10px; padding: 10px 14px; }
+  summary { cursor: pointer; color: var(--text); }
+  kbd { font: 12px ui-monospace, monospace; padding: 1px 6px; border-radius: 5px;
+        border: 1px solid var(--line); background: #ffffff0d; }
+  .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 4px 16px; margin: 10px 0 4px; font-size: 14px; color: var(--dim); }
+  #log { margin: 10px 0 0; max-height: 180px; overflow: auto;
+         font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--dim); }
+  #log .ok { color: var(--ok); }
+  #log .err { color: var(--bad); }
+  footer { margin-top: 20px; font-size: 13px; color: var(--dim); }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Muse Voice 3D</h1>
+    <span class="sub">Say it, and it appears in glasses-free 3D. Flat 2D everywhere else.</span>
+  </header>
+
+  <div class="stage" id="stage">
+    <div class="splash" id="splash">
+      <div>
+        <strong id="splashTitle">Waiting for a command</strong>
+        <span id="splashText">Try “Hey Muse, show me the toy car”, or press <kbd>1</kbd> to <kbd>4</kbd>.</span>
+      </div>
+    </div>
+    <div class="call" id="call" hidden></div>
+    <div class="cover" id="cover" hidden>loading…</div>
+    <div class="badge wait" id="badge" data-inline3d-overlay><span class="dot"></span><span id="badgeText">starting…</span></div>
+  </div>
+
+  <div class="bar">
+    <span class="pill">source <b id="srcState">—</b></span>
+    <span class="pill">display <b id="dispState">—</b></span>
+    <span class="pill">showing <b id="contentState">nothing</b></span>
+    <span class="pill">depth <b id="depthState">0</b></span>
+  </div>
+
+  <form class="cmd" id="cmdForm" autocomplete="off">
+    <input id="cmdInput" placeholder="show_model car · show_splat knot · set_mode 2d · set_depth 0.3 · start_call · clear" aria-label="Command">
+    <button type="submit">Run</button>
+  </form>
+
+  <details id="help">
+    <summary>Keyboard (mock mode) and log</summary>
+    <div class="keys" id="keys"></div>
+    <div id="log"></div>
+  </details>
+
+  <footer>
+    <a href="https://github.com/joehillthunder/displayxr-muse-voice">Source</a> ·
+    Built on <a href="https://github.com/DisplayXR/displayxr-web">@displayxr/inline3d</a> ·
+    3D needs the <a href="https://github.com/DisplayXR/displayxr-browser">DisplayXR Browser</a> on a 3D display ·
+    Not affiliated with or endorsed by Meta ·
+    <a href="./assets/LICENSES.md">Asset licenses</a>
+  </footer>
+</div>
+
+<!-- Pinned versions. ./splat imports three and Spark statically even when it renders with
+     PlayCanvas, and Spark needs the three/addons/ prefix (see the SDK's samples/splat). -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+  "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/2.1.0/spark.module.js",
+  "playcanvas": "https://cdn.jsdelivr.net/npm/playcanvas@2.22.3/build/playcanvas.mjs",
+  "@displayxr/inline3d": "https://cdn.jsdelivr.net/npm/@displayxr/inline3d@1.37.1/js/inline3d.js",
+  "@displayxr/inline3d/three": "https://cdn.jsdelivr.net/npm/@displayxr/inline3d@1.37.1/js/inline3d-three.js",
+  "@displayxr/inline3d/viewer": "https://cdn.jsdelivr.net/npm/@displayxr/inline3d@1.37.1/js/inline3d-viewer.js",
+  "@displayxr/inline3d/splat": "https://cdn.jsdelivr.net/npm/@displayxr/inline3d@1.37.1/js/inline3d-splat.js",
+  "@displayxr/inline3d/model": "https://cdn.jsdelivr.net/npm/@displayxr/inline3d@1.37.1/js/inline3d-model-entry.js",
+  "@displayxr/inline3d/call": "https://cdn.jsdelivr.net/npm/@displayxr/inline3d@1.37.1/js/inline3d-call.js"
+} }
+</script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

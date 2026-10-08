@@ -19,7 +19,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
 
 const HELLO_TIMEOUT_MS = 5000;
-const ACK_TIMEOUT_MS = 20000;
+// A first load fetches the engine plus a multi-MB asset; Muse commands declare a longer timeout.
+const ACK_TIMEOUT_MS = 45000;
 const MAX_PAYLOAD = 16 * 1024;
 
 const MIME = {
@@ -89,7 +90,7 @@ export function staticFile(urlPath, roots) {
   return null;
 }
 
-export function createBridge({ secret, port = 8787, host = '0.0.0.0', root = ROOT, log = console.log } = {}) {
+export function createBridge({ secret, port = 8791, host = '0.0.0.0', root = ROOT, log = console.log } = {}) {
   if (!secret || secret.length < 16) {
     throw new Error('BRIDGE_SECRET must be set (16+ characters). Copy .env.example to .env.');
   }
@@ -253,7 +254,7 @@ export function createBridge({ secret, port = 8787, host = '0.0.0.0', root = ROO
 // Run directly: node server.js
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   loadEnv(join(ROOT, '.env'));
-  const port = Number(process.env.BRIDGE_PORT) || 8787;
+  const port = Number(process.env.BRIDGE_PORT) || 8791;
   try {
     const bridge = createBridge({ secret: process.env.BRIDGE_SECRET, port });
     await bridge.listen();

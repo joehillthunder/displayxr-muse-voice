@@ -68,7 +68,7 @@ function connect(url, secret) {
 
 async function main() {
   loadEnv(join(ROOT, '.env'));
-  const url = process.env.BRIDGE_URL || `ws://localhost:${process.env.BRIDGE_PORT || 8787}/ws`;
+  const url = process.env.BRIDGE_URL || `ws://localhost:${process.env.BRIDGE_PORT || 8791}/ws`;
   const secret = process.env.BRIDGE_SECRET;
   if (!secret) {
     console.error('BRIDGE_SECRET is not set. Copy .env.example to .env and fill it in.');
