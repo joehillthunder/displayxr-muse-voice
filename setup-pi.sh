@@ -128,7 +128,9 @@ install_args=(--from "$SDK_DIR/linux" --run-as "$(id -un)" --no-pair)
 say "Running the Muse SDK installer (it explains what access Muse gets and asks first)"
 bash "$SDK_DIR/linux/install.sh" "${install_args[@]}"
 
-[ -x "$VENV/bin/python" ] && [ -x "$UV" ] || die "the Muse installer did not create $VENV; see its output above."
+if [ ! -x "$VENV/bin/python" ] || [ ! -x "$UV" ]; then
+    die "the Muse installer did not create $VENV; see its output above."
+fi
 
 say "Installing the DisplayXR commands into $VENV"
 sudo "$UV" pip install --quiet --python "$VENV/bin/python" --no-deps --reinstall "$REPO/gadget"
