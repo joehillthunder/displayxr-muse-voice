@@ -1,0 +1,18 @@
+{
+  "name": "displayxr-muse-voice-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LAN-only WebSocket relay between voice command sources and the DisplayXR display page.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": { "node": ">=20" },
+  "bin": { "dxr-mock": "./mock.js" },
+  "scripts": {
+    "start": "node server.js",
+    "mock": "node mock.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "ws": "8.18.3"
+  }
+}
