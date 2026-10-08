@@ -1,0 +1,8 @@
+description: Rotary encoder + button that send depth and 2D/3D commands to the displayxr-muse-voice bridge
+license: Apache-2.0
+dependencies:
+  # Same versions the Muse ESP32 SDK's main component uses.
+  espressif/esp_websocket_client: "~1.2"
+  espressif/cjson: "~1.7"
+  idf:
+    version: ">=5.1"

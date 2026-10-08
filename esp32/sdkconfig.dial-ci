@@ -1,0 +1,5 @@
+# Overlay used by CI to compile the dial into the SDK's default (ESP32-C5 DevKitC-1) build.
+# Placeholder values only; set real ones in idf.py menuconfig, never in a committed file.
+CONFIG_DXR_DIAL_ENABLED=y
+CONFIG_DXR_DIAL_BRIDGE_URL="ws://192.168.1.50:8791/ws"
+CONFIG_DXR_DIAL_BRIDGE_SECRET="ci-placeholder-not-a-secret"

@@ -1,0 +1,37 @@
+diff --git a/esp32/main/CMakeLists.txt b/esp32/main/CMakeLists.txt
+index 6e6018c..183fc2e 100644
+--- a/esp32/main/CMakeLists.txt
++++ b/esp32/main/CMakeLists.txt
+@@ -67,6 +67,8 @@ set(GADGET_REQUIRES
+     # is loaded, so this is unconditional; unused code is not linked.
+     esp_driver_i2s
+     esp_driver_pcnt
++    # displayxr-muse-voice: depth dial + 2D/3D button (off unless CONFIG_DXR_DIAL_ENABLED).
++    displayxr_dial
+ )
+ 
+ # E-paper has its own status screen in place of led_status.c.
+diff --git a/esp32/main/main.c b/esp32/main/main.c
+index 89bff0b..718c226 100644
+--- a/esp32/main/main.c
++++ b/esp32/main/main.c
+@@ -20,6 +20,9 @@
+ #if CONFIG_MUSE_ENABLED
+ #include "muse_glue.h"
+ #endif
++#if CONFIG_DXR_DIAL_ENABLED
++#include "displayxr_dial.h"
++#endif
+ 
+ void app_main(void) {
+ #if CONFIG_HOMEHUB_SUPPORT_BUG_REPORT
+@@ -31,6 +34,9 @@ void app_main(void) {
+     ESP_LOGI("link.main", CONFIG_GADGET_PRODUCT_NAME " starting");
+ #if CONFIG_MUSE_ENABLED
+     muse_glue_start();
++#endif
++#if CONFIG_DXR_DIAL_ENABLED
++    displayxr_dial_start();
+ #endif
+     app_run();
+ }

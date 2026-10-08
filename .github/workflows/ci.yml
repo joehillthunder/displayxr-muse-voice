@@ -55,12 +55,43 @@ jobs:
         run: python -m pytest -q -rs
         working-directory: gadget
 
+  esp32-dial:
+    # Compiles the dial into the Muse ESP32 SDK's default board build (ESP32-C5 DevKitC-1),
+    # once enabled and once disabled, in the same ESP-IDF image the SDK's own CI uses.
+    # This checks that it builds; it does not test it on hardware.
+    runs-on: ubuntu-latest
+    container: espressif/idf:v6.0.1
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        dial: [enabled, disabled]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the pinned Muse SDK and add the dial
+        run: |
+          git clone --quiet https://github.com/facebookincubator/muse-gadget-sdk /tmp/muse-sdk
+          git -C /tmp/muse-sdk -c advice.detachedHead=false checkout --quiet "$MUSE_SDK_COMMIT"
+          bash esp32/install-into-sdk.sh /tmp/muse-sdk
+          cp esp32/sdkconfig.dial-ci /tmp/muse-sdk/esp32/sdkconfig.dial-ci
+      - name: Build
+        working-directory: /tmp/muse-sdk/esp32
+        run: |
+          . "$IDF_PATH/export.sh" > /dev/null
+          defaults="sdkconfig.defaults"
+          if [ "${{ matrix.dial }}" = enabled ]; then defaults="$defaults;sdkconfig.dial-ci"; fi
+          idf.py -B build -DIDF_TARGET=esp32c5 -DSDKCONFIG=build/sdkconfig \
+            -DSDKCONFIG_DEFAULTS="$defaults" build
+          grep -q "CONFIG_DXR_DIAL_ENABLED=y" build/sdkconfig && echo "dial compiled in" || echo "dial off"
+
   scripts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: ShellCheck
-        run: shellcheck setup-pi.sh
+        run: shellcheck setup-pi.sh esp32/install-into-sdk.sh
       - name: Pins agree
         run: |
           grep -q "MUSE_SDK_COMMIT=\"${MUSE_SDK_COMMIT}\"" setup-pi.sh || { echo "setup-pi.sh and ci.yml pin different Muse SDK commits"; exit 1; }

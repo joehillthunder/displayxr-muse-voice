@@ -1,0 +1,40 @@
+menu "DisplayXR dial"
+
+    config DXR_DIAL_ENABLED
+        bool "Enable the DisplayXR depth dial and 2D/3D button"
+        default n
+        help
+            Reads a rotary encoder and a push button and sends set_depth / set_mode
+            commands to the displayxr-muse-voice bridge on the LAN.
+
+    config DXR_DIAL_BRIDGE_URL
+        string "Bridge URL"
+        depends on DXR_DIAL_ENABLED
+        default "ws://192.168.1.50:8791/ws"
+        help
+            BRIDGE_URL from the Windows PC's .env (setup-windows.bat prints it).
+
+    config DXR_DIAL_BRIDGE_SECRET
+        string "Bridge secret"
+        depends on DXR_DIAL_ENABLED
+        default ""
+        help
+            BRIDGE_SECRET from the Windows PC's .env. It is compiled into the firmware and
+            kept in sdkconfig, which the Muse SDK already gitignores. Do not commit it.
+
+    config DXR_DIAL_ENCODER_A_GPIO
+        int "Encoder A (CLK) GPIO"
+        depends on DXR_DIAL_ENABLED
+        default 4
+
+    config DXR_DIAL_ENCODER_B_GPIO
+        int "Encoder B (DT) GPIO"
+        depends on DXR_DIAL_ENABLED
+        default 5
+
+    config DXR_DIAL_BUTTON_GPIO
+        int "Button GPIO (button to GND; internal pull-up)"
+        depends on DXR_DIAL_ENABLED
+        default 6
+
+endmenu
