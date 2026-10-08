@@ -21,6 +21,7 @@ is fine there. Our commands touch no files and run no processes; they only talk 
 from __future__ import annotations
 
 import logging
+import sys
 from typing import Callable
 
 from displayxr_gadget.adapters.base import CommandSink, CommandSource
@@ -138,5 +139,8 @@ class MuseSource(CommandSource):
     def run(self, sink: CommandSink, argv: list[str]) -> int:
         from musegadget import cli as muse_cli
 
-        install(lambda: sink)
+        added = install(lambda: sink)
+        # The SDK's CLI configures logging only once it starts, so say this directly (journald
+        # captures it: the unit sets PYTHONUNBUFFERED=1).
+        print(f"displayxr: added {len(added)} DisplayXR commands: {', '.join(added)}", file=sys.stderr)
         return muse_cli.main(argv or ["run"])
